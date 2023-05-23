@@ -1,2 +1,2 @@
 # pips
-Parameter Inference from Power Spectra
+Parameter Inference with Power Spectra

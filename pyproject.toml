@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pips"
+version = "0.0.1"
+authors = [
+  { name="Shubh Agrawal", email="shubh@sas.upenn.edu" },
+]
+description = "Parameter Inference with Power Spectra"
+readme = "README.md"
+requires-python = ">=3.9"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: BSD License",
+    "Operating System :: OS Independent",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/shubhagrawal30/pips"
+"Bug Tracker" = "https://github.com/shubhagrawal30/pips/issues"
