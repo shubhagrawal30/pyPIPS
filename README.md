@@ -1,2 +1,2 @@
-# pips
-Parameter Inference with Power Spectra
+# pyPIPS
+Python Parameter Inference with Power Spectra
