@@ -1,5 +1,6 @@
 import numpy as np
 import tqdm
+from datetime import datetime
 
 import tensorflow as tf
 import tensorflow.keras as tfk
@@ -7,6 +8,15 @@ import tensorflow.keras.layers as tfkl
 import tensorflow_probability as tfp
 tfd = tfp.distributions
 tf.keras.backend.clear_session()
+class CustomCallback(tf.keras.callbacks.Callback):
+    def __init__(self, PROGRESS_EPOCH=50):
+        self.PROGRESS_EPOCH = PROGRESS_EPOCH
+    def on_epoch_end(self, epoch, logs=None):
+        if epoch % self.PROGRESS_EPOCH == 0:
+            print(f"{datetime.now().strftime('%H:%M:%S')}, epoch {epoch}: ", end="")
+            for key, val in logs.items():
+                print(f"{key}: {val:.3f}", end= "\t")
+            print()
 
 import pyPIPS.datasets as datasets
 
@@ -26,7 +36,6 @@ class BayConvPIPS():
         self.output_shape = self.Y_train.shape[1]
 
         self.model = None
-        self.history = None
 
         self.generated = False
         self.compiled = False
@@ -34,9 +43,12 @@ class BayConvPIPS():
 
         self.kl_divergence_function = (lambda q, p, _: tfd.kl_divergence(q, p) /
                            tf.cast(self.trained_on, dtype=tf.float32))
+        
+        self.epochs = []
+        self.history = []
 
     def generate(self, get_summary=True, n_conv=None, f_conv=None, kernel=None, \
-                 n_dense=None, f_dense=None, activation=tf.nn.leaky_relu):
+                 n_dense=None, f_dense=None, activation=tf.nn.tanh):
         if n_conv is not None:
             assert len(f_conv) == n_conv, "define independently number of filters per conv layer"
             assert len(kernel) == n_conv, "define independently kernel size for each conv layer"
@@ -78,6 +90,12 @@ class BayConvPIPS():
         self.model.add(tfp.layers.MultivariateNormalTriL(self.output_shape))
 
         self.generated = True
+        self.nconv = n_conv
+        self.fconv = f_conv
+        self.kernel = kernel
+        self.ndense = n_dense
+        self.fdense = f_dense
+        self.activation = activation
 
         if get_summary:
             self.model.summary()
@@ -94,9 +112,20 @@ class BayConvPIPS():
 
         self.compiled = True
 
-    def fit(self, epochs=20, verbose=1):
+    def fit(self, val_dataset=None, epochs=20, verbose=1, callback_epoch=None):
         assert self.compiled, "model must be compiled before fitting"
-        self.history = self.model.fit(self.X_train, self.Y_train, epochs=epochs, verbose=verbose)
+        if val_dataset is None:
+            validation_data = None
+        else:
+            validation_data = (val_dataset.P_kzs, val_dataset.all_parameters)
+        if callback_epoch is None:
+            self.history.append(self.model.fit(self.X_train, self.Y_train, epochs=epochs, \
+                                verbose=verbose, validation_data=validation_data))
+        else:
+            self.history.append(self.model.fit(self.X_train, self.Y_train, epochs=epochs, \
+                                verbose=verbose, callbacks=[CustomCallback(callback_epoch)], \
+                                validation_data=validation_data))
+        self.epochs.append(epochs)
         self.fitted = True
 
     def predict(self, dataset: datasets.Dataset, verbose=1):

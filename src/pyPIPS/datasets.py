@@ -1,6 +1,7 @@
 import numpy as np
 import pyDOE
 import tqdm
+import pickle
 
 class Datapoint():
     def __init__(self, ks, zs, P_kz, params):
@@ -23,9 +24,9 @@ class Dataset():
     
     def add(self, datapoint: Datapoint):
         if self.parameters is None:
-            self.parameters = datapoint.params.keys()
+            self.parameters = list(datapoint.params.keys())
         else:
-            assert np.array_equal(self.parameters, datapoint.params.keys()), "parameters must be the same for all datapoints"
+            assert np.array_equal(self.parameters, list(datapoint.params.keys())), "parameters must be the same for all datapoints"
         if self.datapoints is None:
             self.datapoints = []
             self.P_kzs = np.empty((0, len(datapoint.ks), len(datapoint.zs)))
@@ -43,7 +44,7 @@ class Dataset():
     
     def generate_from_func(self, func, num_points, parameter_range, sampling="LH"):
         if self.parameters is None:
-            self.parameters = parameter_range.keys()
+            self.parameters = list(parameter_range.keys())
         par_range = np.array(list(parameter_range.values()))
         if sampling == "LH":
             lhs_sample = pyDOE.lhs(len(self.parameters), samples=num_points, criterion='c')
@@ -89,3 +90,10 @@ class Dataset():
                 datasets[i].add(self.get_datapoint(j))
         return datasets
     
+    def save(self, filename):
+        with open(filename, "wb") as f:
+            pickle.dump(self, f)
+
+def load(filename):
+    with open(filename, "rb") as f:
+        return pickle.load(f)

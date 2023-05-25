@@ -22,7 +22,9 @@ dependencies = [
     "pyDOE",
     "tqdm",
     "tensorflow",
-    "tensorflow_probability"
+    "tensorflow_probability",
+    "optuna",
+    "pickle"
 ]
 
 [project.urls]
