@@ -31,19 +31,29 @@ class BayConvPIPSOptimizer():
         if 1:
             model = BayConvPIPS(self.train)
             if self.n_conv is None:
-                self.n_conv = trial.suggest_int('n_conv', 2, 4)
+                n_conv = trial.suggest_int('n_conv', 2, 4)
+            else:
+                n_conv = self.n_conv
             if self.f_conv is None:
-                self.f_conv = [2 ** trial.suggest_int(f'log2(f_conv{i})', 2, 5) for i in range(self.n_conv)]
+                f_conv = [2 ** trial.suggest_int(f'log2(f_conv{i})', 2, 5) for i in range(n_conv)]
+            else:
+                f_conv = self.f_conv
             if self.kernel is None:
-                kernel = [trial.suggest_int(f'kernel{i}', 2, 5) for i in range(self.n_conv)]
-                self.kernel = list(zip(kernel, kernel))
+                kernel = [trial.suggest_int(f'kernel{i}', 2, 5) for i in range(n_conv)]
+                kernel = list(zip(kernel, kernel))
+            else:
+                kernel = self.kernel
             if self.n_dense is None:
-                self.n_dense = trial.suggest_int('n_dense', 2, 4)
+                n_dense = trial.suggest_int('n_dense', 2, 4)
+            else:
+                n_dense = self.n_dense
             if self.f_dense is None:
-                self.f_dense = [2 ** trial.suggest_int(f'log2(f_dense{i})', 5, 8) for i in range(self.n_dense)]
+                f_dense = [2 ** trial.suggest_int(f'log2(f_dense{i})', 5, 8) for i in range(n_dense)]
+            else:
+                f_dense = self.f_dense
 
-            model.generate(get_summary=False, n_conv=self.n_conv, f_conv=self.f_conv, kernel=self.kernel, \
-                 n_dense=self.n_dense, f_dense=self.f_dense)
+            model.generate(get_summary=False, n_conv=n_conv, f_conv=f_conv, kernel=kernel, \
+                 n_dense=n_dense, f_dense=f_dense)
             model.compile()
 
             model.fit(epochs=self.epochs, verbose=0, callback_epoch=self.callback_epoch)
@@ -70,19 +80,29 @@ class BayConvPIPSOptimizer():
 
         model = BayConvPIPS(self.train)
         if self.n_conv is None:
-            self.n_conv = self.study.best_params['n_conv']
+            n_conv = self.study.best_params['n_conv']
+        else:
+            n_conv = self.n_conv
         if self.f_conv is None:
-            self.f_conv = [2 ** self.study.best_params[f'log2(f_conv{i})'] for i in range(self.n_conv)]
+            f_conv = [2 ** self.study.best_params[f'log2(f_conv{i})'] for i in range(n_conv)]
+        else:
+            f_conv = self.f_conv
         if self.kernel is None:
-            kernel = [self.study.best_params[f'kernel{i}'] for i in range(self.n_conv)]
-            self.kernel = list(zip(kernel, kernel))
+            kernel = [self.study.best_params[f'kernel{i}'] for i in range(n_conv)]
+            kernel = list(zip(kernel, kernel))
+        else:
+            kernel = self.kernel
         if self.n_dense is None:
-            self.n_dense = self.study.best_params['n_dense']
+            n_dense = self.study.best_params['n_dense']
+        else:
+            n_dense = self.n_dense
         if self.f_dense is None:
-            self.f_dense = [2 ** self.study.best_params[f'log2(f_dense{i})'] for i in range(self.n_dense)]
+            f_dense = [2 ** self.study.best_params[f'log2(f_dense{i})'] for i in range(n_dense)]
+        else:
+            f_dense = self.f_dense
 
-        model.generate(get_summary=False, n_conv=self.n_conv, f_conv=self.f_conv, kernel=self.kernel, \
-                n_dense=self.n_dense, f_dense=self.f_dense)
+        model.generate(get_summary=False, n_conv=n_conv, f_conv=f_conv, kernel=kernel, \
+                n_dense=n_dense, f_dense=f_dense)
         model.compile()
 
         model.fit(epochs=self.epochs, verbose=0, callback_epoch=self.callback_epoch)
