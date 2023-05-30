@@ -42,16 +42,17 @@ class Dataset():
                                 np.array(list(datapoint.params.values()))[None], axis=0)
         self.num_points += 1
     
-    def generate_from_func(self, func, num_points, parameter_range, sampling="LH"):
-        if self.parameters is None:
-            self.parameters = list(parameter_range.keys())
+    def generate_from_func(self, func, num_points, parameter_range, sampling="LH", gen_params_not_data_params=False):
+        par_names = list(parameter_range.keys())
+        if not gen_params_not_data_params and self.parameters is None:
+            self.parameters = par_names
         par_range = np.array(list(parameter_range.values()))
         if sampling == "LH":
-            lhs_sample = pyDOE.lhs(len(self.parameters), samples=num_points, criterion='c')
+            lhs_sample = pyDOE.lhs(len(par_names), samples=num_points, criterion='c')
             lhs_cosmology = lhs_sample * (par_range[:,1] - par_range[:,0]) + par_range[:,0]
         
         for i in tqdm.tqdm(range(num_points)):
-            params = dict(zip(self.parameters, lhs_cosmology[i]))
+            params = dict(zip(par_names, lhs_cosmology[i]))
             self.add(func(params))
 
     def get_datapoint(self, i):
