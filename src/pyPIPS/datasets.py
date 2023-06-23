@@ -3,6 +3,8 @@ import pyDOE
 import tqdm
 import pickle
 
+from sklearn.preprocessing import StandardScaler
+
 class Datapoint():
     def __init__(self, ks, zs, P_kz, params):
         assert len(ks) == P_kz.shape[0], "first index of P_kz must be k's"
@@ -21,6 +23,9 @@ class Dataset():
         self.num_points = 0
         self.parameters = None
         self.all_parameters = None
+        self.scaler = None
+        self.unscaled_parameters = None
+        self.has_scaled = False
     
     def add(self, datapoint: Datapoint):
         if self.parameters is None:
@@ -54,6 +59,16 @@ class Dataset():
         for i in tqdm.tqdm(range(num_points)):
             params = dict(zip(par_names, lhs_cosmology[i]))
             self.add(func(params))
+
+    def scale_parameters(self, hard=False, scaler=StandardScaler()):
+        if hard or not self.has_scaled:
+            self.has_scaled = True
+            self.scaler = scaler
+            self.scaler.fit(self.all_parameters)
+            self.unscaled_parameters = self.all_parameters
+            self.all_parameters = self.scaler.transform(self.all_parameters)
+        else:
+            print("y data already scaled, pass hard=True to rescale")
 
     def get_datapoint(self, i):
         return self.datapoints[i]

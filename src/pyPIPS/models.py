@@ -18,6 +18,8 @@ class CustomCallback(tf.keras.callbacks.Callback):
                 print(f"{key}: {val:.3f}", end= "\t")
             print()
 
+from sklearn.preprocessing import StandardScaler
+
 import pyPIPS.datasets as datasets
 
 class PIPSModel():
@@ -31,6 +33,10 @@ class PIPSModel():
 
         self.X_train = dataset.P_kzs
         self.Y_train = dataset.all_parameters
+
+        self.has_scaled = dataset.has_scaled
+        self.scaler = dataset.scaler
+        self.unscaled_parameters = dataset.unscaled_parameters
 
         self.output_shape = self.Y_train.shape[1]
 
@@ -67,9 +73,12 @@ class PIPSModel():
         self.epochs.append(epochs)
         self.fitted = True
 
-    def predict(self, dataset: datasets.Dataset, verbose=1):
+    def predict(self, dataset: datasets.Dataset, verbose=1, reverse_scaling=True):
         assert self.fitted, "model must be fitted before predicting"
-        return self.model.predict(dataset.P_kzs, verbose=verbose)
+        if reverse_scaling:
+            return self.scaler.inverse_transform(self.model.predict(dataset.P_kzs, verbose=verbose))
+        else:
+            return self.model.predict(dataset.P_kzs, verbose=verbose)
     
     def evaluate(self, dataset: datasets.Dataset, verbose=1):
         assert self.fitted, "model must be fitted before evaluating"
@@ -84,10 +93,12 @@ class BayConvPIPS(PIPSModel):
 
 
     def generate(self, get_summary=True, n_conv=None, f_conv=None, kernel=None, \
-                 n_dense=None, f_dense=None, activation=tf.nn.tanh, no_output=False):
+                 n_dense=None, f_dense=None, activation=tf.nn.tanh, no_output=False, pool_size=None, \
+                 normalize=True):
         if n_conv is not None:
             assert len(f_conv) == n_conv, "define independently number of filters per conv layer"
             assert len(kernel) == n_conv, "define independently kernel size for each conv layer"
+            assert len(pool_size) == n_conv, "define independently pool size for each conv layer"
         if n_dense is not None:
             assert len(f_dense) == n_dense, "define independently number of filters per dense layer"
     
@@ -97,10 +108,12 @@ class BayConvPIPS(PIPSModel):
                 n_conv = 2
                 f_conv = [8, 16]
                 kernel = [(2, 2), (2, 2)]
+                pool_size = [(2, 2), (2, 2)]
             else:
                 n_conv = 4
                 f_conv = [4, 8, 16, 32]
                 kernel = [(2, 2), (2, 2), (2, 2), (2, 2)]
+                pool_size = [(2, 2), (2, 2), (2, 2), (2, 2)]
 
         if n_dense is None:
             n_dense = 3
@@ -109,11 +122,13 @@ class BayConvPIPS(PIPSModel):
 
         self.model = tf.keras.Sequential()
         self.model.add(tf.keras.layers.InputLayer(input_shape=self.input_shape))
+        if normalize:
+            self.model.add(tf.keras.layers.Normalization())
         for i in range(n_conv):
             self.model.add(tfp.layers.Convolution2DFlipout(filters = f_conv[i], \
                         kernel_size=kernel[i], padding='same', activation=activation, \
                         kernel_divergence_fn=self.kl_divergence_function))
-            self.model.add(tf.keras.layers.MaxPooling2D(pool_size=(2, 2), padding="same"))
+            self.model.add(tf.keras.layers.MaxPooling2D(pool_size=pool_size[i], padding="same"))
 
         self.model.add(tf.keras.layers.Flatten())
 
