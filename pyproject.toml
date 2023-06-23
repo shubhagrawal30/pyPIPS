@@ -24,7 +24,7 @@ dependencies = [
     "tensorflow",
     "tensorflow_probability",
     "optuna",
-    "pickle"
+    "scikit-learn",
 ]
 
 [project.urls]
