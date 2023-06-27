@@ -68,7 +68,14 @@ class Dataset():
             self.unscaled_parameters = self.all_parameters
             self.all_parameters = self.scaler.transform(self.all_parameters)
         else:
-            print("y data already scaled, pass hard=True to rescale")
+            print("parameters already scaled, pass hard=True to rescale")
+
+    def unscale_parameters(self):
+        if self.has_scaled:
+            self.all_parameters = self.unscaled_parameters
+            self.has_scaled = False
+        else:
+            print("parameters are unscaled")
 
     def get_datapoint(self, i):
         return self.datapoints[i]

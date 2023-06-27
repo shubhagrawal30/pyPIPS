@@ -62,6 +62,8 @@ class PIPSModel():
         if val_dataset is None:
             validation_data = None
         else:
+            assert val_dataset.has_scaled == self.has_scaled, \
+                "validation dataset must have same scaling as training dataset"
             validation_data = (val_dataset.P_kzs, val_dataset.all_parameters)
         if callback_epoch is None:
             self.history.append(self.model.fit(self.X_train, self.Y_train, epochs=epochs, \
