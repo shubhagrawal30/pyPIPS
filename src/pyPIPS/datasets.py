@@ -2,6 +2,7 @@ import numpy as np
 import pyDOE
 import tqdm
 import pickle
+import multiprocessing as mp
 
 from sklearn.preprocessing import StandardScaler
 
@@ -31,7 +32,8 @@ class Dataset():
         if self.parameters is None:
             self.parameters = list(datapoint.params.keys())
         else:
-            assert np.array_equal(self.parameters, list(datapoint.params.keys())), "parameters must be the same for all datapoints"
+            assert np.array_equal(self.parameters, list(datapoint.params.keys())), \
+                "parameters must be the same for all datapoints"
         if self.datapoints is None:
             self.datapoints = []
             self.P_kzs = np.empty((0, len(datapoint.ks), len(datapoint.zs)))
@@ -47,7 +49,8 @@ class Dataset():
                                 np.array(list(datapoint.params.values()))[None], axis=0)
         self.num_points += 1
     
-    def generate_from_func(self, func, num_points, parameter_range, sampling="LH", gen_params_not_data_params=False):
+    def generate_from_func(self, func, num_points, parameter_range, sampling="LH", \
+                           gen_params_not_data_params=False, mp_threads=None):
         par_names = list(parameter_range.keys())
         if not gen_params_not_data_params and self.parameters is None:
             self.parameters = par_names
@@ -56,9 +59,15 @@ class Dataset():
             lhs_sample = pyDOE.lhs(len(par_names), samples=num_points, criterion='c')
             lhs_cosmology = lhs_sample * (par_range[:,1] - par_range[:,0]) + par_range[:,0]
         
-        for i in tqdm.tqdm(range(num_points)):
-            params = dict(zip(par_names, lhs_cosmology[i]))
-            self.add(func(params))
+        if mp_threads is not None:
+            pool = mp.Pool(mp_threads)
+            mp_func = lambda cosmology: func(cosmology)
+            for _ in tqdm.tqdm(pool.imap_unordered(mp_func, lhs_cosmology), total=num_points):
+                self.add(_)
+        else:
+            for i in tqdm.tqdm(range(num_points)):
+                params = dict(zip(par_names, lhs_cosmology[i]))
+                self.add(func(params))
 
     def scale_parameters(self, hard=False, scaler=StandardScaler()):
         if hard or not self.has_scaled:
