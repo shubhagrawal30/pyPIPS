@@ -61,9 +61,11 @@ class Dataset():
         
         if mp_threads is not None:
             pool = mp.Pool(mp_threads)
-            mp_func = lambda cosmology: func(cosmology)
-            for _ in tqdm.tqdm(pool.imap_unordered(mp_func, lhs_cosmology), total=num_points):
+            params = [dict(zip(par_names, lhs_cosmology[i])) for i in range(num_points)]
+            for _ in tqdm.tqdm(pool.imap_unordered(func, params), total=num_points):
                 self.add(_)
+            pool.close()
+            pool.join()
         else:
             for i in tqdm.tqdm(range(num_points)):
                 params = dict(zip(par_names, lhs_cosmology[i]))
