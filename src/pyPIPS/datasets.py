@@ -64,8 +64,6 @@ class Dataset():
             params = [dict(zip(par_names, lhs_cosmology[i])) for i in range(num_points)]
             for _ in tqdm.tqdm(pool.imap_unordered(func, params), total=num_points):
                 self.add(_)
-            pool.close()
-            pool.join()
         else:
             for i in tqdm.tqdm(range(num_points)):
                 params = dict(zip(par_names, lhs_cosmology[i]))
